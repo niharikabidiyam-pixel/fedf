@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduTrack — Attendance Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.15);
+    --text: #f0f4ff;
+    --muted: #6b7a99;
+    --accent: #4f8ef7;
+    --accent2: #a78bfa;
+    --accent3: #34d399;
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --glow: rgba(79,142,247,0.2);
+    --card-radius: 16px;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:16px;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;overflow-x:hidden}
+
+  /* ── BG FX ── */
+  .bg-grid{position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:60px 60px;z-index:0}
+  .orb{position:fixed;border-radius:50%;pointer-events:none;filter:blur(80px);z-index:0;animation:orb-drift 18s ease-in-out infinite}
+  .orb1{width:500px;height:500px;background:rgba(79,142,247,.08);top:-200px;right:-100px}
+  .orb2{width:400px;height:400px;background:rgba(167,139,250,.06);bottom:-100px;left:-100px;animation-delay:-9s}
+  .orb3{width:300px;height:300px;background:rgba(52,211,153,.05);top:40%;left:40%;animation-delay:-4s}
+  @keyframes orb-drift{0%,100%{transform:translate(0,0)}33%{transform:translate(40px,-30px)}66%{transform:translate(-30px,40px)}}
+
+  /* ── PAGES ── */
+  .page{position:relative;z-index:1;display:none;min-height:100vh}
+  .page.active{display:block}
+
+  /* ══════════════════════
+     AUTH SECTION
+  ══════════════════════ */
+  #page-auth{display:none;align-items:center;justify-content:center;padding:20px}
+  #page-auth.active{display:flex}
+  .auth-container{width:100%;max-width:480px}
+  .auth-logo{text-align:center;margin-bottom:32px}
+  .auth-logo span{font-family:var(--font-head);font-size:28px;font-weight:800;letter-spacing:-1px}
+  .auth-logo span b{color:var(--accent)}
+  .auth-logo p{color:var(--muted);font-size:13px;margin-top:4px}
+
+  .auth-tabs{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:24px;gap:4px}
+  .auth-tab{flex:1;padding:10px;text-align:center;border-radius:9px;cursor:pointer;font-family:var(--font-head);font-size:13px;font-weight:600;color:var(--muted);transition:.2s}
+  .auth-tab.active{background:var(--surface2);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+
+  .auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-radius);padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  .auth-card h2{font-family:var(--font-head);font-size:22px;font-weight:700;margin-bottom:6px}
+  .auth-card p.sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+
+  .role-selector{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
+  .role-btn{padding:12px 8px;border:1px solid var(--border);border-radius:10px;text-align:center;cursor:pointer;transition:.2s;background:var(--surface2)}
+  .role-btn .icon{font-size:22px;display:block;margin-bottom:4px}
+  .role-btn .lbl{font-size:11px;font-family:var(--font-head);font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .role-btn.selected{border-color:var(--accent);background:rgba(79,142,247,.1)}
+  .role-btn.selected .lbl{color:var(--accent)}
+
+  .form-group{margin-bottom:16px}
+  .form-group label{display:block;font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .form-group input,.form-group select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:var(--font-body);font-size:14px;outline:none;transition:.2s}
+  .form-group input:focus,.form-group select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+  .form-group select option{background:var(--surface2)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  .btn-primary{width:100%;padding:13px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:var(--font-head);font-size:15px;font-weight:700;cursor:pointer;transition:.2s;letter-spacing:.3px}
+  .btn-primary:hover{background:#3a7de0;transform:translateY(-1px);box-shadow:0 8px 24px rgba(79,142,247,.3)}
+  .btn-primary:active{transform:translateY(0)}
+
+  .auth-error{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:8px;padding:10px 14px;color:var(--danger);font-size:13px;margin-bottom:14px;display:none}
+  .auth-success{background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);border-radius:8px;padding:10px 14px;color:var(--accent3);font-size:13px;margin-bottom:14px;display:none}
+  .auth-switch{text-align:center;margin-top:18px;font-size:13px;color:var(--muted)}
+  .auth-switch a{color:var(--accent);cursor:pointer;text-decoration:none;font-weight:500}
+  .auth-switch a:hover{text-decoration:underline}
+
+  /* ══════════════════════
+     DASHBOARD SECTION
+  ══════════════════════ */
+  #page-dashboard{display:none}
+  #page-dashboard.active{display:block}
+
+  /* NAVBAR */
+  .navbar{display:flex;align-items:center;padding:0 28px;height:64px;background:rgba(17,24,39,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+  .nav-brand{font-family:var(--font-head);font-size:20px;font-weight:800;letter-spacing:-0.5px}
+  .nav-brand b{color:var(--accent)}
+  .nav-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+  .nav-user{display:flex;align-items:center;gap:10px}
+  .nav-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+  .nav-info{display:flex;flex-direction:column}
+  .nav-name{font-size:13px;font-weight:600;line-height:1.2}
+  .nav-role{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .btn-logout{padding:7px 16px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--font-body);font-size:13px;cursor:pointer;transition:.2s}
+  .btn-logout:hover{border-color:var(--danger);color:var(--danger)}
+
+  /* MAIN */
+  .main{padding:32px 28px;max-width:1400px;margin:0 auto}
+  .dash-header{margin-bottom:28px}
+  .dash-header h1{font-family:var(--font-head);font-size:28px;font-weight:800;letter-spacing:-0.5px}
+  .dash-header p{color:var(--muted);font-size:14px;margin-top:4px}
+
+  /* STATS */
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-radius);padding:20px;transition:.2s}
+  .stat-card:hover{border-color:var(--border-hover);transform:translateY(-2px)}
+  .stat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .stat-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .stat-val{font-family:var(--font-head);font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1}
+  .stat-lbl{font-size:12px;color:var(--muted);margin-top:4px}
+  .stat-trend{font-size:12px;color:var(--accent3);margin-top:6px}
+
+  /* CARDS / TABLES */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-radius);overflow:hidden;margin-bottom:20px}
+  .card-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .card-title{font-family:var(--font-head);font-size:16px;font-weight:700}
+  .card-body{padding:20px}
+  .card-actions{display:flex;gap:8px}
+
+  table{width:100%;border-collapse:collapse}
+  th{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+  td{padding:12px 14px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.03)}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(255,255,255,.02)}
+
+  /* BADGES */
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--font-head)}
+  .badge-green{background:rgba(52,211,153,.15);color:var(--accent3)}
+  .badge-yellow{background:rgba(251,191,36,.15);color:var(--warn)}
+  .badge-red{background:rgba(248,113,113,.15);color:var(--danger)}
+  .badge-blue{background:rgba(79,142,247,.15);color:var(--accent)}
+  .badge-purple{background:rgba(167,139,250,.15);color:var(--accent2)}
+
+  /* PROGRESS */
+  .pbar-wrap{width:100px;background:rgba(255,255,255,.06);border-radius:4px;height:6px;overflow:hidden}
+  .pbar{height:100%;border-radius:4px;transition:.4s}
+
+  /* BUTTONS */
+  .btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-family:var(--font-body);font-size:13px;font-weight:500;transition:.2s}
+  .btn-sm{padding:5px 12px;font-size:12px;border-radius:7px}
+  .btn-blue{background:rgba(79,142,247,.2);color:var(--accent);border:1px solid rgba(79,142,247,.3)}
+  .btn-blue:hover{background:rgba(79,142,247,.35)}
+  .btn-green{background:rgba(52,211,153,.15);color:var(--accent3);border:1px solid rgba(52,211,153,.3)}
+  .btn-green:hover{background:rgba(52,211,153,.25)}
+  .btn-red{background:rgba(248,113,113,.15);color:var(--danger);border:1px solid rgba(248,113,113,.3)}
+  .btn-red:hover{background:rgba(248,113,113,.25)}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+  .btn-ghost:hover{border-color:var(--border-hover);color:var(--text)}
+
+  /* TABS */
+  .tab-bar{display:flex;gap:4px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:24px;width:fit-content}
+  .tab{padding:8px 18px;border-radius:7px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:.2s;font-family:var(--font-head)}
+  .tab.active{background:var(--surface);color:var(--text);box-shadow:0 2px 6px rgba(0,0,0,.3)}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-radius);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .modal-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .modal-head h3{font-family:var(--font-head);font-size:18px;font-weight:700}
+  .modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px;line-height:1;border-radius:6px;transition:.2s}
+  .modal-close:hover{color:var(--text);background:rgba(255,255,255,.08)}
+  .modal-body{padding:24px}
+  .modal-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+
+  /* ATTENDANCE GRID */
+  .att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:6px;margin-top:12px}
+  .att-cell{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;cursor:pointer;transition:.2s;border:1px solid transparent}
+  .att-cell.present{background:rgba(52,211,153,.2);color:var(--accent3);border-color:rgba(52,211,153,.3)}
+  .att-cell.absent{background:rgba(248,113,113,.15);color:var(--danger);border-color:rgba(248,113,113,.3)}
+  .att-cell.empty{background:rgba(255,255,255,.04);color:var(--muted);cursor:default}
+
+  /* SUBJECT CARDS */
+  .subj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  .subj-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--card-radius);padding:18px;transition:.2s}
+  .subj-card:hover{border-color:var(--border-hover)}
+  .subj-header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .subj-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px}
+  .subj-name{font-family:var(--font-head);font-size:15px;font-weight:700}
+  .subj-code{font-size:11px;color:var(--muted)}
+  .subj-stat{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+  .subj-pct{font-family:var(--font-head);font-size:24px;font-weight:800}
+  .pbar-wrap-full{width:100%;background:rgba(255,255,255,.06);border-radius:4px;height:8px;overflow:hidden;margin-top:8px}
+
+  /* ALERT */
+  .alert{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+  .alert-warn{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);color:var(--warn)}
+  .alert-info{background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);color:var(--accent)}
+
+  /* SEARCH */
+  .search-bar{position:relative}
+  .search-bar input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px 10px 38px;color:var(--text);font-size:13px;outline:none;transition:.2s}
+  .search-bar input:focus{border-color:var(--accent)}
+  .search-bar::before{content:"🔍";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.5}
+
+  /* CHIPS */
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--font-head);background:var(--surface2);border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:.2s}
+  .chip:hover,.chip.active{border-color:var(--accent);color:var(--accent);background:rgba(79,142,247,.1)}
+
+  /* 2-col layout */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:768px){
+    .grid-2{grid-template-columns:1fr}
+    .form-row{grid-template-columns:1fr}
+    .stats-grid{grid-template-columns:repeat(2,1fr)}
+    .main{padding:20px 16px}
+    .navbar{padding:0 16px}
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar{width:5px;height:5px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+
+  /* ANIMATIONS */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .fadeUp{animation:fadeUp .35s ease forwards}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .fadeIn{animation:fadeIn .3s ease forwards}
+
+  /* EMPTY STATE */
+  .empty{text-align:center;padding:48px 20px;color:var(--muted)}
+  .empty .ei{font-size:40px;margin-bottom:12px;opacity:.5}
+  .empty h3{font-family:var(--font-head);font-size:16px;font-weight:600;margin-bottom:6px;color:var(--text)}
+  .empty p{font-size:13px}
+
+  /* NOTIFICATION */
+  #toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+  .toast-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:slideIn .3s ease;min-width:240px}
+  @keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+  .toast-item.success{border-color:rgba(52,211,153,.3)}
+  .toast-item.error{border-color:rgba(248,113,113,.3)}
+
+  /* USER LIST ITEM */
+  .user-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.03)}
+  .user-item:last-child{border-bottom:none}
+  .user-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+  .user-info{flex:1}
+  .user-name{font-size:14px;font-weight:500}
+  .user-meta{font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+<div id="toast"></div>
+
+<!-- ══════════════════════ AUTH PAGE ══════════════════════ -->
+<div id="page-auth" class="page">
+  <div class="auth-container fadeUp">
+    <div class="auth-logo">
+      <span><b>Edu</b>Track</span>
+      <p>Attendance Management System</p>
+    </div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Sign In</div>
+      <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Create Account</div>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="form-login" class="auth-card">
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in to your account to continue</p>
+      <div class="role-selector">
+        <div class="role-btn selected" data-role="student" onclick="selectRole(this,'login')">
+          <span class="icon">🎒</span><span class="lbl">Student</span>
+        </div>
+        <div class="role-btn" data-role="faculty" onclick="selectRole(this,'login')">
+          <span class="icon">👨‍🏫</span><span class="lbl">Faculty</span>
+        </div>
+        <div class="role-btn" data-role="admin" onclick="selectRole(this,'login')">
+          <span class="icon">🛡️</span><span class="lbl">Admin</span>
+        </div>
+      </div>
+      <div id="login-error" class="auth-error"></div>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="login-user" placeholder="Enter your username" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-pass" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn-primary" onclick="doLogin()">Sign In →</button>
+      <div class="auth-switch">
+        Don't have an account? <a onclick="switchAuthTab('register')">Create one</a>
+      </div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="form-register" class="auth-card" style="display:none">
+      <h2>Create account</h2>
+      <p class="sub">Choose your role and fill in your details</p>
+      <div class="role-selector">
+        <div class="role-btn selected" data-role="student" onclick="selectRole(this,'register')">
+          <span class="icon">🎒</span><span class="lbl">Student</span>
+        </div>
+        <div class="role-btn" data-role="faculty" onclick="selectRole(this,'register')">
+          <span class="icon">👨‍🏫</span><span class="lbl">Faculty</span>
+        </div>
+        <div class="role-btn" data-role="admin" onclick="selectRole(this,'register')">
+          <span class="icon">🛡️</span><span class="lbl">Admin</span>
+        </div>
+      </div>
+      <div id="register-error" class="auth-error"></div>
+      <div id="register-success" class="auth-success"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name</label>
+          <input type="text" id="reg-fname" placeholder="First name">
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          <input type="text" id="reg-lname" placeholder="Last name">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="reg-user" placeholder="Choose a username" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="your@email.com">
+      </div>
+      <!-- Student-only fields -->
+      <div id="reg-student-fields">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Roll Number</label>
+            <input type="text" id="reg-roll" placeholder="e.g. CS2024001">
+          </div>
+          <div class="form-group">
+            <label>Semester</label>
+            <select id="reg-sem">
+              <option value="">Select sem</option>
+              <option>Sem 1</option><option>Sem 2</option><option>Sem 3</option>
+              <option>Sem 4</option><option>Sem 5</option><option>Sem 6</option>
+              <option>Sem 7</option><option>Sem 8</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          <select id="reg-dept-s">
+            <option value="">Select department</option>
+            <option>Computer Science</option><option>Electronics</option>
+            <option>Mechanical</option><option>Civil</option><option>IT</option>
+          </select>
+        </div>
+      </div>
+      <!-- Faculty-only fields -->
+      <div id="reg-faculty-fields" style="display:none">
+        <div class="form-group">
+          <label>Employee ID</label>
+          <input type="text" id="reg-empid" placeholder="e.g. FAC2024001">
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          <select id="reg-dept-f">
+            <option value="">Select department</option>
+            <option>Computer Science</option><option>Electronics</option>
+            <option>Mechanical</option><option>Civil</option><option>IT</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Subjects (comma separated)</label>
+          <input type="text" id="reg-subjects" placeholder="e.g. Data Structures, DBMS">
+        </div>
+      </div>
+      <!-- Admin-only fields -->
+      <div id="reg-admin-fields" style="display:none">
+        <div class="form-group">
+          <label>Admin Code</label>
+          <input type="password" id="reg-admincode" placeholder="Enter admin registration code">
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:12px">Use code: <b style="color:var(--accent)">ADMIN2024</b></p>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="reg-pass" placeholder="Min 6 characters">
+        </div>
+        <div class="form-group">
+          <label>Confirm Password</label>
+          <input type="password" id="reg-pass2" placeholder="Repeat password">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="doRegister()">Create Account →</button>
+      <div class="auth-switch">
+        Already have an account? <a onclick="switchAuthTab('login')">Sign in</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ DASHBOARD PAGE ══════════════════════ -->
+<div id="page-dashboard" class="page">
+  <nav class="navbar">
+    <div class="nav-brand"><b>Edu</b>Track</div>
+    <div class="nav-right">
+      <div class="nav-user">
+        <div class="nav-avatar" id="nav-avatar"></div>
+        <div class="nav-info">
+          <div class="nav-name" id="nav-name"></div>
+          <div class="nav-role" id="nav-role"></div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+    </div>
+  </nav>
+  <div class="main" id="dash-content"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal-box">
+    <div class="modal-head">
+      <h3 id="modal-title">Modal</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot" id="modal-foot"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  DATA STORE  (localStorage-backed)
+// ═══════════════════════════════════════════════════════
+const STORE_KEY = 'edutrack_data';
+
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || defaultStore(); }
+  catch { return defaultStore(); }
+}
+function saveStore(s) { localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
+
+function defaultStore() {
+  // Pre-seeded accounts
+  return {
+    users: [
+      { id:'u1', role:'admin', username:'admin', password:'admin123',
+        firstName:'Super', lastName:'Admin', email:'admin@edu.com',
+        adminCode:'ADMIN2024', createdAt: new Date().toISOString() },
+      { id:'u2', role:'faculty', username:'faculty', password:'faculty123',
+        firstName:'Dr. Ramesh', lastName:'Kumar', email:'ramesh@edu.com',
+        empId:'FAC001', dept:'Computer Science', subjects:['Data Structures','DBMS','OS'],
+        createdAt: new Date().toISOString() },
+      { id:'u3', role:'student', username:'student', password:'student123',
+        firstName:'Arjun', lastName:'Sharma', email:'arjun@edu.com',
+        rollNo:'CS2024001', sem:'Sem 4', dept:'Computer Science',
+        createdAt: new Date().toISOString() },
+      { id:'u4', role:'student', username:'priya', password:'priya123',
+        firstName:'Priya', lastName:'Reddy', email:'priya@edu.com',
+        rollNo:'CS2024002', sem:'Sem 4', dept:'Computer Science',
+        createdAt: new Date().toISOString() },
+    ],
+    attendance: generateSampleAttendance(),
+    notices: [
+      { id:'n1', msg:'Mid-semester exams start from 25th Nov', date:'2024-11-15', by:'admin' },
+      { id:'n2', msg:'Minimum 75% attendance mandatory for exams', date:'2024-11-10', by:'admin' }
+    ]
+  };
+}
+
+function generateSampleAttendance() {
+  const att = {};
+  const subjects = ['Data Structures','DBMS','OS','CN','SE'];
+  const studentIds = ['u3','u4'];
+  studentIds.forEach(sid => {
+    att[sid] = {};
+    subjects.forEach(sub => {
+      att[sid][sub] = [];
+      const total = 20 + Math.floor(Math.random()*10);
+      for(let i=0;i<total;i++){
+        att[sid][sub].push({
+          date: `2024-10-${String(i+1).padStart(2,'0')}`,
+          status: Math.random() > (sid==='u3'?0.2:0.35) ? 'present' : 'absent'
+        });
+      }
+    });
+  });
+  return att;
+}
+
+let DB = loadStore();
+let currentUser = null;
+let loginRole = 'student';
+let regRole = 'student';
+
+// ═══════════════════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════════════════
+function selectRole(el, form) {
+  el.closest('.role-selector').querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  if(form==='login') loginRole = el.dataset.role;
+  else {
+    regRole = el.dataset.role;
+    document.getElementById('reg-student-fields').style.display = regRole==='student'?'block':'none';
+    document.getElementById('reg-faculty-fields').style.display = regRole==='faculty'?'block':'none';
+    document.getElementById('reg-admin-fields').style.display = regRole==='admin'?'block':'none';
+  }
+}
+
+function switchAuthTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-register').classList.toggle('active', tab==='register');
+  document.getElementById('form-login').style.display = tab==='login'?'block':'none';
+  document.getElementById('form-register').style.display = tab==='register'?'block':'none';
+}
+
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  err.style.display='none';
+  if(!u||!p){showErr(err,'Please fill in all fields.');return;}
+  const user = DB.users.find(x=>x.username===u && x.password===p && x.role===loginRole);
+  if(!user){showErr(err,'Invalid username or password.');return;}
+  currentUser = user;
+  showDashboard();
+}
+
+function doRegister() {
+  const fname = document.getElementById('reg-fname').value.trim();
+  const lname = document.getElementById('reg-lname').value.trim();
+  const uname = document.getElementById('reg-user').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-pass').value;
+  const pass2 = document.getElementById('reg-pass2').value;
+  const err = document.getElementById('register-error');
+  const suc = document.getElementById('register-success');
+  err.style.display='none'; suc.style.display='none';
+
+  if(!fname||!lname||!uname||!email||!pass) return showErr(err,'Please fill in all required fields.');
+  if(pass.length<6) return showErr(err,'Password must be at least 6 characters.');
+  if(pass!==pass2) return showErr(err,'Passwords do not match.');
+  if(DB.users.find(x=>x.username===uname)) return showErr(err,'Username already taken. Choose another.');
+
+  const newUser = { id:'u'+Date.now(), role:regRole, username:uname, password:pass,
+    firstName:fname, lastName:lname, email, createdAt:new Date().toISOString() };
+
+  if(regRole==='student') {
+    const roll = document.getElementById('reg-roll').value.trim();
+    const sem = document.getElementById('reg-sem').value;
+    const dept = document.getElementById('reg-dept-s').value;
+    if(!roll||!sem||!dept) return showErr(err,'Please fill in all student fields.');
+    if(DB.users.find(x=>x.rollNo===roll)) return showErr(err,'Roll number already registered.');
+    newUser.rollNo = roll; newUser.sem = sem; newUser.dept = dept;
+    DB.attendance[newUser.id] = {};
+  } else if(regRole==='faculty') {
+    const empId = document.getElementById('reg-empid').value.trim();
+    const dept = document.getElementById('reg-dept-f').value;
+    const subs = document.getElementById('reg-subjects').value.trim();
+    if(!empId||!dept) return showErr(err,'Please fill in all faculty fields.');
+    newUser.empId = empId; newUser.dept = dept;
+    newUser.subjects = subs ? subs.split(',').map(s=>s.trim()).filter(Boolean) : [];
+  } else if(regRole==='admin') {
+    const code = document.getElementById('reg-admincode').value.trim();
+    if(code!=='ADMIN2024') return showErr(err,'Invalid admin registration code.');
+  }
+
+  DB.users.push(newUser);
+  saveStore(DB);
+  suc.textContent = '✓ Account created! You can now sign in.';
+  suc.style.display='block';
+  setTimeout(()=>switchAuthTab('login'),1800);
+}
+
+function showErr(el, msg) { el.textContent=msg; el.style.display='block'; }
+
+function doLogout() {
+  currentUser = null;
+  showPage('page-auth');
+  toast('Signed out successfully','success');
+}
+
+// ═══════════════════════════════════════════════════════
+//  ROUTING
+// ═══════════════════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>{p.style.display='none';p.classList.remove('active')});
+  const pg = document.getElementById(id);
+  pg.style.display = id==='page-auth' ? 'flex' : 'block';
+  pg.classList.add('active');
+}
+
+function showDashboard() {
+  showPage('page-dashboard');
+  const av = document.getElementById('nav-avatar');
+  const initials = (currentUser.firstName[0]+(currentUser.lastName[0]||'')).toUpperCase();
+  const colors = {admin:'#4f8ef7',faculty:'#a78bfa',student:'#34d399'};
+  av.style.background = colors[currentUser.role];
+  av.textContent = initials;
+  document.getElementById('nav-name').textContent = currentUser.firstName+' '+currentUser.lastName;
+  document.getElementById('nav-role').textContent = currentUser.role.charAt(0).toUpperCase()+currentUser.role.slice(1);
+  renderDash();
+}
+
+function renderDash() {
+  const r = currentUser.role;
+  if(r==='admin') renderAdmin();
+  else if(r==='faculty') renderFaculty();
+  else renderStudent();
+}
+
+// ═══════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════
+function pct(arr) {
+  if(!arr||!arr.length) return 0;
+  return Math.round(arr.filter(x=>x.status==='present').length/arr.length*100);
+}
+function pctColor(p) { return p>=75?'var(--accent3)':p>=60?'var(--warn)':'var(--danger)'; }
+function pctBadge(p) {
+  if(p>=75) return `<span class="badge badge-green">${p}%</span>`;
+  if(p>=60) return `<span class="badge badge-yellow">${p}%</span>`;
+  return `<span class="badge badge-red">${p}%</span>`;
+}
+function pctBar(p) {
+  return `<div class="pbar-wrap"><div class="pbar" style="width:${p}%;background:${pctColor(p)}"></div></div>`;
+}
+function uid() { return 'i'+Date.now()+Math.random().toString(36).slice(2,6); }
+function toast(msg,type='success') {
+  const d=document.getElementById('toast');
+  const el=document.createElement('div');
+  el.className=`toast-item ${type}`;
+  el.innerHTML=`<span>${type==='success'?'✓':'✗'}</span>${msg}`;
+  d.appendChild(el);
+  setTimeout(()=>el.remove(),3000);
+}
+function openModal(title,body,foot='') {
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-body').innerHTML=body;
+  document.getElementById('modal-foot').innerHTML=foot;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════════
+//  ADMIN DASHBOARD
+// ═══════════════════════════════════════════════════════
+function renderAdmin() {
+  const students = DB.users.filter(u=>u.role==='student');
+  const faculty = DB.users.filter(u=>u.role==='faculty');
+  const admins = DB.users.filter(u=>u.role==='admin');
+  const totalAtt = calcOverallAtt();
+  document.getElementById('dash-content').innerHTML = `
+  <div class="dash-header fadeUp">
+    <h1>Admin Dashboard</h1>
+    <p>Manage users, monitor attendance, and system overview</p>
+  </div>
+  <div class="stats-grid fadeUp">
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon" style="background:rgba(79,142,247,.15)">🎒</div>
+      </div>
+      <div class="stat-val">${students.length}</div>
+      <div class="stat-lbl">Total Students</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon" style="background:rgba(167,139,250,.15)">👨‍🏫</div>
+      </div>
+      <div class="stat-val">${faculty.length}</div>
+      <div class="stat-lbl">Faculty Members</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon" style="background:rgba(52,211,153,.15)">📊</div>
+      </div>
+      <div class="stat-val">${totalAtt}%</div>
+      <div class="stat-lbl">Overall Attendance</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top">
+        <div class="stat-icon" style="background:rgba(251,191,36,.15)">⚠️</div>
+      </div>
+      <div class="stat-val">${countLowAtt()}</div>
+      <div class="stat-lbl">Students Below 75%</div>
+    </div>
+  </div>
+
+  <div class="tab-bar" id="admin-tabs">
+    <div class="tab active" onclick="adminTab(this,'students')">Students</div>
+    <div class="tab" onclick="adminTab(this,'faculty')">Faculty</div>
+    <div class="tab" onclick="adminTab(this,'notices')">Notices</div>
+    <div class="tab" onclick="adminTab(this,'attendance')">Attendance</div>
+  </div>
+  <div id="admin-tab-content"></div>`;
+  adminRenderStudents();
+}
+
+let curAdminTab='students';
+function adminTab(el,tab) {
+  document.querySelectorAll('#admin-tabs .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  curAdminTab=tab;
+  if(tab==='students') adminRenderStudents();
+  else if(tab==='faculty') adminRenderFaculty();
+  else if(tab==='notices') adminRenderNotices();
+  else if(tab==='attendance') adminRenderAttendance();
+}
+
+function adminRenderStudents() {
+  const students = DB.users.filter(u=>u.role==='student');
+  let rows = students.map(s=>{
+    const att = DB.attendance[s.id]||{};
+    const subs = Object.keys(att);
+    const avg = subs.length ? Math.round(subs.reduce((a,k)=>a+pct(att[k]),0)/subs.length) : 0;
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div class="user-avatar" style="background:#34d399;width:32px;height:32px;font-size:11px">${(s.firstName[0]+s.lastName[0]).toUpperCase()}</div>
+        <div><div style="font-weight:500">${s.firstName} ${s.lastName}</div><div style="font-size:11px;color:var(--muted)">${s.rollNo||'—'}</div></div>
+      </div></td>
+      <td>${s.dept||'—'}</td>
+      <td>${s.sem||'—'}</td>
+      <td>${pctBar(avg)} ${pctBadge(avg)}</td>
+      <td><span class="badge ${avg>=75?'badge-green':avg>=60?'badge-yellow':'badge-red'}">${avg>=75?'Good':avg>=60?'Warning':'Low'}</span></td>
+      <td>
+        <button class="btn btn-sm btn-blue" onclick="adminViewStudent('${s.id}')">View</button>
+        <button class="btn btn-sm btn-red" onclick="adminDeleteUser('${s.id}')">Remove</button>
+      </td>
+    </tr>`;
+  }).join('');
+  document.getElementById('admin-tab-content').innerHTML = `
+  <div class="card fadeIn">
+    <div class="card-header">
+      <span class="card-title">Students (${students.length})</span>
+      <button class="btn btn-sm btn-green" onclick="adminAddStudent()">+ Add Student</button>
+    </div>
+    <div style="overflow-x:auto">
+    <table><thead><tr><th>Name</th><th>Dept</th><th>Sem</th><th>Attendance</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="6"><div class="empty"><div class="ei">👥</div><h3>No students yet</h3></div></td></tr>'}</tbody></table>
+    </div></div>`;
+}
+
+function adminRenderFaculty() {
+  const facArr = DB.users.filter(u=>u.role==='faculty');
+  let rows = facArr.map(f=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:10px">
+      <div class="user-avatar" style="background:#a78bfa;width:32px;height:32px;font-size:11px">${(f.firstName[0]+f.lastName[0]).toUpperCase()}</div>
+      <div><div style="font-weight:500">${f.firstName} ${f.lastName}</div><div style="font-size:11px;color:var(--muted)">${f.empId||'—'}</div></div>
+    </div></td>
+    <td>${f.dept||'—'}</td>
+    <td>${(f.subjects||[]).map(s=>`<span class="badge badge-blue" style="margin:1px">${s}</span>`).join('')||'—'}</td>
+    <td>${f.email}</td>
+    <td><button class="btn btn-sm btn-red" onclick="adminDeleteUser('${f.id}')">Remove</button></td>
+  </tr>`).join('');
+  document.getElementById('admin-tab-content').innerHTML = `
+  <div class="card fadeIn">
+    <div class="card-header"><span class="card-title">Faculty (${facArr.length})</span></div>
+    <div style="overflow-x:auto">
+    <table><thead><tr><th>Name</th><th>Dept</th><th>Subjects</th><th>Email</th><th>Actions</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="5"><div class="empty"><div class="ei">👨‍🏫</div><h3>No faculty yet</h3></div></td></tr>'}</tbody></table>
+    </div></div>`;
+}
+
+function adminRenderNotices() {
+  const list = DB.notices.map(n=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+      <div style="font-size:20px">📌</div>
+      <div style="flex:1"><div style="font-size:14px">${n.msg}</div><div style="font-size:11px;color:var(--muted);margin-top:2px">${n.date} · by ${n.by}</div></div>
+      <button class="btn btn-sm btn-red" onclick="deleteNotice('${n.id}')">×</button>
+    </div>`).join('');
+  document.getElementById('admin-tab-content').innerHTML = `
+  <div class="card fadeIn">
+    <div class="card-header">
+      <span class="card-title">Notices (${DB.notices.length})</span>
+      <button class="btn btn-sm btn-blue" onclick="addNotice()">+ Add Notice</button>
+    </div>
+    <div class="card-body">${list||'<div class="empty"><div class="ei">📭</div><h3>No notices</h3></div>'}</div>
+  </div>`;
+}
+
+function adminRenderAttendance() {
+  const students = DB.users.filter(u=>u.role==='student');
+  let rows = students.map(s=>{
+    const att = DB.attendance[s.id]||{};
+    const subs = Object.keys(att);
+    return subs.map(sub=>{
+      const p = pct(att[sub]);
+      return `<tr>
+        <td>${s.firstName} ${s.lastName}</td>
+        <td>${s.rollNo||'—'}</td>
+        <td>${sub}</td>
+        <td>${att[sub].filter(x=>x.status==='present').length}/${att[sub].length}</td>
+        <td>${pctBar(p)} ${pctBadge(p)}</td>
+        <td><button class="btn btn-sm btn-blue" onclick="adminMarkAtt('${s.id}','${sub}')">Mark</button></td>
+      </tr>`;
+    }).join('');
+  }).join('');
+  document.getElementById('admin-tab-content').innerHTML = `
+  <div class="card fadeIn">
+    <div class="card-header"><span class="card-title">Attendance Records</span></div>
+    <div style="overflow-x:auto">
+    <table><thead><tr><th>Student</th><th>Roll No</th><th>Subject</th><th>Classes</th><th>Attendance</th><th>Actions</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="6"><div class="empty"><div class="ei">📊</div><h3>No attendance data</h3></div></td></tr>'}</tbody></table>
+    </div></div>`;
+}
+
+function calcOverallAtt() {
+  const students = DB.users.filter(u=>u.role==='student');
+  let total=0,count=0;
+  students.forEach(s=>{
+    const att=DB.attendance[s.id]||{};
+    Object.values(att).forEach(arr=>{total+=pct(arr);count++;});
+  });
+  return count ? Math.round(total/count) : 0;
+}
+function countLowAtt() {
+  return DB.users.filter(u=>u.role==='student').filter(s=>{
+    const att=DB.attendance[s.id]||{};
+    const subs=Object.keys(att);
+    if(!subs.length) return false;
+    const avg=subs.reduce((a,k)=>a+pct(att[k]),0)/subs.length;
+    return avg<75;
+  }).length;
+}
+
+function adminViewStudent(id) {
+  const s = DB.users.find(u=>u.id===id);
+  const att = DB.attendance[id]||{};
+  const subs = Object.keys(att);
+  const rows = subs.map(sub=>{
+    const p=pct(att[sub]);
+    return `<tr><td>${sub}</td><td>${att[sub].filter(x=>x.status==='present').length}/${att[sub].length}</td><td>${pctBadge(p)}</td></tr>`;
+  }).join('');
+  openModal(`${s.firstName} ${s.lastName}`,`
+    <div style="margin-bottom:16px">
+      <p style="font-size:13px;color:var(--muted)">Roll No: ${s.rollNo||'—'} · ${s.dept||'—'} · ${s.sem||'—'}</p>
+    </div>
+    <table><thead><tr><th>Subject</th><th>Classes</th><th>Attendance</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="3" style="text-align:center;color:var(--muted)">No data</td></tr>'}</tbody></table>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Close</button>`);
+}
+
+function adminDeleteUser(id) {
+  if(!confirm('Remove this user?')) return;
+  DB.users = DB.users.filter(u=>u.id!==id);
+  delete DB.attendance[id];
+  saveStore(DB);
+  toast('User removed','error');
+  renderAdmin();
+}
+
+function adminAddStudent() {
+  openModal('Add Student Manually',`
+    <div class="form-row">
+      <div class="form-group"><label>First Name</label><input id="m-fn" class="form-group input" placeholder="First name" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;outline:none"></div>
+      <div class="form-group"><label>Last Name</label><input id="m-ln" placeholder="Last name" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;outline:none"></div>
+    </div>
+    <div class="form-group"><label>Username</label><input id="m-un" placeholder="Username" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;outline:none"></div>
+    <div class="form-group"><label>Password</label><input id="m-pw" type="password" placeholder="Password" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;outline:none"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Roll No</label><input id="m-rn" placeholder="Roll No" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;outline:none"></div>
+      <div class="form-group"><label>Semester</label><input id="m-sm" placeholder="e.g. Sem 4" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;outline:none"></div>
+    </div>
+    <div class="form-group"><label>Department</label><input id="m-dp" placeholder="Department" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;outline:none"></div>
+    <div id="m-err" style="color:var(--danger);font-size:12px;margin-top:8px"></div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-primary" style="padding:9px 20px" onclick="submitAddStudent()">Add Student</button>`);
+}
+
+function submitAddStudent() {
+  const fn=document.getElementById('m-fn').value.trim();
+  const ln=document.getElementById('m-ln').value.trim();
+  const un=document.getElementById('m-un').value.trim();
+  const pw=document.getElementById('m-pw').value;
+  const rn=document.getElementById('m-rn').value.trim();
+  const sm=document.getElementById('m-sm').value.trim();
+  const dp=document.getElementById('m-dp').value.trim();
+  const err=document.getElementById('m-err');
+  if(!fn||!ln||!un||!pw||!rn||!sm||!dp){err.textContent='Fill all fields';return;}
+  if(DB.users.find(u=>u.username===un)){err.textContent='Username taken';return;}
+  const s={id:'u'+Date.now(),role:'student',username:un,password:pw,
+    firstName:fn,lastName:ln,email:'',rollNo:rn,sem:sm,dept:dp,createdAt:new Date().toISOString()};
+  DB.users.push(s);
+  DB.attendance[s.id]={};
+  saveStore(DB);
+  closeModal();
+  toast('Student added!','success');
+  renderAdmin();
+}
+
+function addNotice() {
+  openModal('Add Notice',
+    `<div class="form-group"><label>Notice Message</label><textarea id="n-msg" rows="4" placeholder="Enter notice..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;outline:none;resize:vertical"></textarea></div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+     <button class="btn btn-primary" style="padding:9px 20px" onclick="submitNotice()">Post</button>`);
+}
+function submitNotice() {
+  const msg=document.getElementById('n-msg').value.trim();
+  if(!msg) return;
+  DB.notices.unshift({id:uid(),msg,date:new Date().toISOString().split('T')[0],by:currentUser.username});
+  saveStore(DB);
+  closeModal();
+  toast('Notice posted!','success');
+  adminRenderNotices();
+}
+function deleteNotice(id) {
+  DB.notices=DB.notices.filter(n=>n.id!==id);
+  saveStore(DB);
+  toast('Notice removed','error');
+  adminRenderNotices();
+}
+
+function adminMarkAtt(sid,sub) {
+  const student = DB.users.find(u=>u.id===sid);
+  const today = new Date().toISOString().split('T')[0];
+  const existing = (DB.attendance[sid][sub]||[]).find(x=>x.date===today);
+  if(existing){toast('Attendance already marked for today','error');return;}
+  openModal(`Mark Attendance — ${sub}`,`
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Student: ${student.firstName} ${student.lastName} · Date: ${today}</p>
+    <div style="display:flex;gap:12px;justify-content:center">
+      <button class="btn btn-green" style="padding:14px 32px;font-size:15px" onclick="confirmMark('${sid}','${sub}','${today}','present')">✓ Present</button>
+      <button class="btn btn-red" style="padding:14px 32px;font-size:15px" onclick="confirmMark('${sid}','${sub}','${today}','absent')">✗ Absent</button>
+    </div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Cancel</button>`);
+}
+
+function confirmMark(sid,sub,date,status) {
+  if(!DB.attendance[sid]) DB.attendance[sid]={};
+  if(!DB.attendance[sid][sub]) DB.attendance[sid][sub]=[];
+  DB.attendance[sid][sub].push({date,status});
+  saveStore(DB);
+  closeModal();
+  toast(`Marked ${status} for ${date}`,'success');
+  adminRenderAttendance();
+}
+
+// ═══════════════════════════════════════════════════════
+//  FACULTY DASHBOARD
+// ═══════════════════════════════════════════════════════
+function renderFaculty() {
+  const mySubjects = currentUser.subjects||[];
+  const students = DB.users.filter(u=>u.role==='student');
+  document.getElementById('dash-content').innerHTML = `
+  <div class="dash-header fadeUp">
+    <h1>Faculty Dashboard</h1>
+    <p>Welcome, ${currentUser.firstName}! Manage attendance for your subjects.</p>
+  </div>
+  <div class="stats-grid fadeUp">
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon" style="background:rgba(167,139,250,.15)">📚</div></div>
+      <div class="stat-val">${mySubjects.length}</div>
+      <div class="stat-lbl">My Subjects</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon" style="background:rgba(79,142,247,.15)">👥</div></div>
+      <div class="stat-val">${students.length}</div>
+      <div class="stat-lbl">Total Students</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon" style="background:rgba(251,191,36,.15)">⚠️</div></div>
+      <div class="stat-val">${countLowAttForSubjects(mySubjects)}</div>
+      <div class="stat-lbl">Students Below 75%</div>
+    </div>
+  </div>
+
+  <div class="tab-bar" id="fac-tabs">
+    <div class="tab active" onclick="facTab(this,'mark')">Mark Attendance</div>
+    <div class="tab" onclick="facTab(this,'reports')">Reports</div>
+    <div class="tab" onclick="facTab(this,'manage')">Manage Subjects</div>
+  </div>
+  <div id="fac-tab-content"></div>`;
+  facRenderMark();
+}
+
+let curFacTab='mark';
+function facTab(el,tab) {
+  document.querySelectorAll('#fac-tabs .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  curFacTab=tab;
+  if(tab==='mark') facRenderMark();
+  else if(tab==='reports') facRenderReports();
+  else if(tab==='manage') facRenderManage();
+}
+
+function facRenderMark() {
+  const mySubjects = currentUser.subjects||[];
+  const students = DB.users.filter(u=>u.role==='student');
+  const today = new Date().toISOString().split('T')[0];
+  if(!mySubjects.length) {
+    document.getElementById('fac-tab-content').innerHTML=`<div class="card"><div class="card-body"><div class="empty"><div class="ei">📚</div><h3>No subjects assigned</h3><p>Go to "Manage Subjects" tab to add your subjects.</p></div></div></div>`;return;
+  }
+  let html = `<div class="form-group" style="max-width:320px;margin-bottom:20px">
+    <label>Select Subject</label>
+    <select id="fac-sub-sel" onchange="facRenderStudentList()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;outline:none">
+      ${mySubjects.map(s=>`<option value="${s}">${s}</option>`).join('')}
+    </select>
+  </div>
+  <div id="fac-student-list"></div>`;
+  document.getElementById('fac-tab-content').innerHTML=`<div class="card fadeIn"><div class="card-header"><span class="card-title">Mark Today's Attendance</span><span style="font-size:12px;color:var(--muted)">${today}</span></div><div class="card-body">${html}</div></div>`;
+  facRenderStudentList();
+}
+
+function facRenderStudentList() {
+  const sub = document.getElementById('fac-sub-sel')?.value;
+  if(!sub) return;
+  const students = DB.users.filter(u=>u.role==='student');
+  const today = new Date().toISOString().split('T')[0];
+  let rows = students.map(s=>{
+    const att = (DB.attendance[s.id]||{})[sub]||[];
+    const todayRec = att.find(x=>x.date===today);
+    const p = pct(att);
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+      <div class="user-avatar" style="background:#34d399;width:36px;height:36px;font-size:12px">${(s.firstName[0]+s.lastName[0]).toUpperCase()}</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:500">${s.firstName} ${s.lastName}</div>
+        <div style="font-size:11px;color:var(--muted)">${s.rollNo||'—'} · Overall: ${pctBadge(p)}</div>
+      </div>
+      ${todayRec
+        ? `<span class="badge ${todayRec.status==='present'?'badge-green':'badge-red'}">${todayRec.status}</span>`
+        : `<div style="display:flex;gap:8px">
+            <button class="btn btn-sm btn-green" onclick="facMark('${s.id}','${sub}','present')">✓ Present</button>
+            <button class="btn btn-sm btn-red" onclick="facMark('${s.id}','${sub}','absent')">✗ Absent</button>
+           </div>`}
+    </div>`;
+  }).join('');
+  document.getElementById('fac-student-list').innerHTML = students.length ? rows : '<div class="empty"><div class="ei">👥</div><h3>No students registered</h3></div>';
+}
+
+function facMark(sid,sub,status) {
+  const today = new Date().toISOString().split('T')[0];
+  if(!DB.attendance[sid]) DB.attendance[sid]={};
+  if(!DB.attendance[sid][sub]) DB.attendance[sid][sub]=[];
+  const existing = DB.attendance[sid][sub].find(x=>x.date===today);
+  if(existing){existing.status=status;}
+  else{DB.attendance[sid][sub].push({date:today,status});}
+  saveStore(DB);
+  toast(`Marked ${status}`,'success');
+  facRenderStudentList();
+}
+
+function facRenderReports() {
+  const mySubjects = currentUser.subjects||[];
+  const students = DB.users.filter(u=>u.role==='student');
+  let html = mySubjects.map(sub=>{
+    let rows = students.map(s=>{
+      const att = (DB.attendance[s.id]||{})[sub]||[];
+      const p=pct(att);
+      return `<tr><td>${s.firstName} ${s.lastName}</td><td>${s.rollNo||'—'}</td>
+        <td>${att.filter(x=>x.status==='present').length}/${att.length}</td>
+        <td>${pctBar(p)} ${pctBadge(p)}</td></tr>`;
+    }).join('');
+    return `<div class="card fadeIn" style="margin-bottom:16px">
+      <div class="card-header"><span class="card-title">📚 ${sub}</span></div>
+      <div style="overflow-x:auto">
+      <table><thead><tr><th>Student</th><th>Roll No</th><th>Classes</th><th>Attendance</th></tr></thead>
+      <tbody>${rows}</tbody></table></div></div>`;
+  }).join('');
+  document.getElementById('fac-tab-content').innerHTML = html||`<div class="card"><div class="card-body"><div class="empty"><div class="ei">📚</div><h3>No subjects</h3></div></div></div>`;
+}
+
+function facRenderManage() {
+  const mySubjects = currentUser.subjects||[];
+  const chips = mySubjects.map(s=>`<div class="chip active" style="cursor:default">${s} <span onclick="facRemoveSub('${s}')" style="cursor:pointer;margin-left:4px;color:var(--danger)">×</span></div>`).join('');
+  document.getElementById('fac-tab-content').innerHTML=`
+  <div class="card fadeIn">
+    <div class="card-header"><span class="card-title">My Subjects</span></div>
+    <div class="card-body">
+      <div class="chips">${chips||'<span style="color:var(--muted);font-size:13px">No subjects yet</span>'}</div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <input id="new-sub-inp" placeholder="Add new subject..." style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;outline:none"
+          onkeydown="if(event.key==='Enter')facAddSub()">
+        <button class="btn btn-blue" onclick="facAddSub()">+ Add</button>
+      </div>
+    </div>
+  </div>`;
+}
+function facAddSub() {
+  const v = document.getElementById('new-sub-inp').value.trim();
+  if(!v) return;
+  if(!currentUser.subjects) currentUser.subjects=[];
+  if(currentUser.subjects.includes(v)){toast('Already added','error');return;}
+  currentUser.subjects.push(v);
+  const idx = DB.users.findIndex(u=>u.id===currentUser.id);
+  if(idx>-1) DB.users[idx].subjects=currentUser.subjects;
+  saveStore(DB);
+  toast(`Added ${v}`,'success');
+  facRenderManage();
+}
+function facRemoveSub(sub) {
+  currentUser.subjects = (currentUser.subjects||[]).filter(s=>s!==sub);
+  const idx = DB.users.findIndex(u=>u.id===currentUser.id);
+  if(idx>-1) DB.users[idx].subjects=currentUser.subjects;
+  saveStore(DB);
+  toast(`Removed ${sub}`,'error');
+  facRenderManage();
+}
+
+function countLowAttForSubjects(subs) {
+  const students = DB.users.filter(u=>u.role==='student');
+  let low=0;
+  students.forEach(s=>{
+    subs.forEach(sub=>{
+      const att=(DB.attendance[s.id]||{})[sub]||[];
+      if(att.length && pct(att)<75) low++;
+    });
+  });
+  return low;
+}
+
+// ═══════════════════════════════════════════════════════
+//  STUDENT DASHBOARD
+// ═══════════════════════════════════════════════════════
+function renderStudent() {
+  const att = DB.attendance[currentUser.id]||{};
+  const subs = Object.keys(att);
+  const avg = subs.length ? Math.round(subs.reduce((a,k)=>a+pct(att[k]),0)/subs.length) : 0;
+  const lowCount = subs.filter(k=>pct(att[k])<75).length;
+
+  document.getElementById('dash-content').innerHTML = `
+  <div class="dash-header fadeUp">
+    <h1>My Attendance</h1>
+    <p>${currentUser.rollNo||''} · ${currentUser.dept||''} · ${currentUser.sem||''}</p>
+  </div>
+  ${lowCount>0?`<div class="alert alert-warn fadeUp">⚠️ You have <strong>${lowCount} subject(s)</strong> with attendance below 75%. Risk of exam detention!</div>`:''}
+  <div class="stats-grid fadeUp">
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon" style="background:rgba(52,211,153,.15)">📊</div></div>
+      <div class="stat-val" style="color:${pctColor(avg)}">${avg}%</div>
+      <div class="stat-lbl">Overall Attendance</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon" style="background:rgba(79,142,247,.15)">📚</div></div>
+      <div class="stat-val">${subs.length}</div>
+      <div class="stat-lbl">Subjects</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon" style="background:rgba(52,211,153,.15)">✅</div></div>
+      <div class="stat-val">${subs.reduce((a,k)=>a+(att[k]||[]).filter(x=>x.status==='present').length,0)}</div>
+      <div class="stat-lbl">Classes Attended</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-top"><div class="stat-icon" style="background:rgba(248,113,113,.15)">❌</div></div>
+      <div class="stat-val">${subs.reduce((a,k)=>a+(att[k]||[]).filter(x=>x.status==='absent').length,0)}</div>
+      <div class="stat-lbl">Classes Missed</div>
+    </div>
+  </div>
+
+  <div class="tab-bar" id="stu-tabs">
+    <div class="tab active" onclick="stuTab(this,'subjects')">Subject-wise</div>
+    <div class="tab" onclick="stuTab(this,'calendar')">Calendar</div>
+    <div class="tab" onclick="stuTab(this,'notices')">Notices</div>
+  </div>
+  <div id="stu-tab-content"></div>`;
+  stuRenderSubjects();
+}
+
+function stuTab(el,tab) {
+  document.querySelectorAll('#stu-tabs .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  if(tab==='subjects') stuRenderSubjects();
+  else if(tab==='calendar') stuRenderCalendar();
+  else if(tab==='notices') stuRenderNotices();
+}
+
+function stuRenderSubjects() {
+  const att = DB.attendance[currentUser.id]||{};
+  const subs = Object.keys(att);
+  const icons = ['📐','💻','⚙️','🔬','📡','🗄️','🖥️','📱'];
+  const colors = ['rgba(79,142,247,.15)','rgba(167,139,250,.15)','rgba(52,211,153,.15)','rgba(251,191,36,.15)'];
+  let cards = subs.map((sub,i)=>{
+    const p=pct(att[sub]);
+    const present=att[sub].filter(x=>x.status==='present').length;
+    const total=att[sub].length;
+    const needed = p<75 ? Math.ceil((0.75*total-present)/(1-0.75)) : 0;
+    return `<div class="subj-card">
+      <div class="subj-header">
+        <div class="subj-icon" style="background:${colors[i%4]}">${icons[i%8]}</div>
+        <div><div class="subj-name">${sub}</div><div class="subj-code">${present}/${total} classes attended</div></div>
+      </div>
+      <div class="pbar-wrap-full"><div class="pbar" style="width:${p}%;background:${pctColor(p)}"></div></div>
+      <div class="subj-stat">
+        <div class="subj-pct" style="color:${pctColor(p)}">${p}%</div>
+        ${pctBadge(p)}
+      </div>
+      ${needed>0?`<div style="font-size:11px;color:var(--danger);margin-top:8px">⚠️ Need ${needed} more classes to reach 75%</div>`:''}
+      <div style="margin-top:10px">
+        <button class="btn btn-sm btn-blue" onclick="stuViewSubject('${sub}')">View Details</button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('stu-tab-content').innerHTML = `
+  <div class="subj-grid fadeIn">${cards||'<div class="empty"><div class="ei">📚</div><h3>No subjects assigned</h3><p>Your faculty will mark attendance for your subjects.</p></div>'}</div>`;
+}
+
+function stuViewSubject(sub) {
+  const att = (DB.attendance[currentUser.id]||{})[sub]||[];
+  const p=pct(att);
+  const cells = att.map(r=>`
+    <div class="att-cell ${r.status}" title="${r.date}">${r.date.slice(8)}</div>`).join('');
+  openModal(`📚 ${sub}`,`
+    <div style="display:flex;gap:16px;margin-bottom:16px;align-items:center">
+      <div style="font-family:var(--font-head);font-size:36px;font-weight:800;color:${pctColor(p)}">${p}%</div>
+      <div><div style="font-size:13px;color:var(--muted)">${att.filter(x=>x.status==='present').length} present / ${att.filter(x=>x.status==='absent').length} absent</div>
+      ${pctBadge(p)}</div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Each cell = one class (hover for date)</p>
+    <div class="att-grid">${cells||'<p style="color:var(--muted);font-size:13px">No classes recorded yet.</p>'}</div>`,
+    `<button class="btn btn-ghost" onclick="closeModal()">Close</button>`);
+}
+
+function stuRenderCalendar() {
+  const att = DB.attendance[currentUser.id]||{};
+  const subs = Object.keys(att);
+  // Collect all dates
+  const dateMap = {};
+  subs.forEach(sub=>{
+    (att[sub]||[]).forEach(r=>{
+      if(!dateMap[r.date]) dateMap[r.date]={present:0,absent:0};
+      if(r.status==='present') dateMap[r.date].present++;
+      else dateMap[r.date].absent++;
+    });
+  });
+  const sorted = Object.keys(dateMap).sort().reverse().slice(0,30);
+  let rows = sorted.map(d=>{
+    const {present,absent}=dateMap[d];
+    const total=present+absent;
+    const p=Math.round(present/total*100);
+    return `<tr>
+      <td>${d}</td>
+      <td>${present} / ${total} subjects</td>
+      <td>${pctBadge(p)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('stu-tab-content').innerHTML=`
+  <div class="card fadeIn">
+    <div class="card-header"><span class="card-title">Attendance History (last 30 days)</span></div>
+    <div style="overflow-x:auto">
+    <table><thead><tr><th>Date</th><th>Classes Present</th><th>Day Score</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="3"><div class="empty"><div class="ei">📅</div><h3>No history yet</h3></div></td></tr>'}</tbody></table>
+    </div></div>`;
+}
+
+function stuRenderNotices() {
+  const list = DB.notices.map(n=>`
+    <div style="display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+      <div style="font-size:20px;margin-top:2px">📌</div>
+      <div><div style="font-size:14px">${n.msg}</div><div style="font-size:11px;color:var(--muted);margin-top:4px">${n.date}</div></div>
+    </div>`).join('');
+  document.getElementById('stu-tab-content').innerHTML=`
+  <div class="card fadeIn">
+    <div class="card-header"><span class="card-title">Notices</span></div>
+    <div class="card-body">${list||'<div class="empty"><div class="ei">📭</div><h3>No notices</h3></div>'}</div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  showPage('page-auth');
+  // Style form inputs in modal dynamically
+  document.getElementById('modal-overlay').addEventListener('click',e=>{
+    if(e.target===document.getElementById('modal-overlay')) closeModal();
+  });
+});
+</script>
+</body>
+</html>
